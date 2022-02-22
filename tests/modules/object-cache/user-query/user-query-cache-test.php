@@ -4,20 +4,77 @@
  *
  * @package performance-lab
  * @group perflab_user_query_cache
- *
- * Paul: add @ticket for each function.
  */
 
 class User_Query_Cache_Tests extends WP_UnitTestCase {
 
 	const SITE_ID = 1;
 
+	/**
+	 * WP_User_Query_Cache object.
+	 *
+	 * @var null|WP_User_Query_Cache
+	 */
 	protected $wp_user_query_cache = null;
 
-	protected function set_up() {
+	public function set_up() {
+		parent::set_up();
+
 		$this->wp_user_query_cache = new WP_User_Query_Cache();
+
 	}
 
+	public function test_construct() {
+
+		$this->assertInstanceOf( 'WP_User_Query_Cache', $this->wp_user_query_cache );
+
+		// Single site filters.
+		$this->assertTrue( add_action( 'user_register', array( $this->wp_user_query_cache, 'clear_user' ), 8, 1 ) );
+		$this->assertTrue( add_action( 'profile_update', array( $this->wp_user_query_cache, 'clear_user' ), 8, 1 ) );
+		$this->assertTrue( add_action( 'register_new_user', array( $this->wp_user_query_cache, 'clear_user' ), 8, 1 ) );
+		$this->assertTrue( add_action( 'delete_user', array( $this->wp_user_query_cache, 'clear_user' ), 8, 1 ) );
+		$this->assertTrue( add_action( 'edit_user_created_user', array( $this->wp_user_query_cache, 'clear_user' ), 8, 1 ) );
+
+		// Most important filter.
+		$this->assertTrue( add_action( 'clean_user_cache', array( $this->wp_user_query_cache, 'clear_user' ), 8, 1 ) );
+
+		// Multisite User filters.
+		$this->assertTrue( add_action( 'wpmu_delete_user', array( $this->wp_user_query_cache, 'clear_user' ), 8, 1 ) );
+		$this->assertTrue( add_action( 'make_spam_user', array( $this->wp_user_query_cache, 'clear_user' ), 8, 1 ) );
+		$this->assertTrue( add_action( 'add_user_to_blog', array( $this->wp_user_query_cache, 'add_user_to_blog' ), 8, 3 ) );
+		$this->assertTrue( add_action( 'remove_user_from_blog', array( $this->wp_user_query_cache, 'remove_user_from_blog' ), 8, 2 ) );
+
+		// Multisite Site filters.
+		$this->assertTrue( add_action( 'wp_insert_site', array( $this->wp_user_query_cache, 'clear_site' ), 8, 1 ) );
+		$this->assertTrue( add_action( 'wp_delete_site', array( $this->wp_user_query_cache, 'clear_site' ), 8, 1 ) );
+
+		// Different params.
+		$this->assertTrue( add_action( 'after_password_reset', array( $this->wp_user_query_cache, 'after_password_reset' ), 8, 1 ) );
+		$this->assertTrue( add_action( 'retrieve_password_key', array( $this->wp_user_query_cache, 'retrieve_password_key' ), 8, 1 ) );
+
+		// Meta api.
+		$this->assertTrue( add_action( 'add_user_meta', array( $this->wp_user_query_cache, 'clear_user' ), 8, 1 ) );
+		$this->assertTrue( add_action( 'updated_user_meta', array( $this->wp_user_query_cache, 'updated_user_meta' ), 8, 2 ) );
+		$this->assertTrue( add_action( 'deleted_user_meta', array( $this->wp_user_query_cache, 'updated_user_meta' ), 8, 2 ) );
+
+		// User query filters..
+		$this->assertTrue( add_filter( 'users_pre_query', array( $this->wp_user_query_cache, 'users_pre_query' ), 8, 2 ) );
+		$this->assertTrue( add_filter( 'found_users_query', array( $this->wp_user_query_cache, 'found_users_query' ), 8, 2 ) );
+
+		// User query count.
+		$this->assertTrue( add_filter( 'pre_count_users', array( $this->wp_user_query_cache, 'pre_count_users' ), 8, 3 ) );
+
+	}
+
+	/**
+	 * A method to call private methods.
+	 *
+	 * @param [type] $obj  A class object.
+	 * @param string $name A method name.
+	 * @param array  $args  An array of arguments.
+	 *
+	 * @return mixed
+	 */
 	public static function call_method( $obj, $name, array $args ) {
 		$class  = new \ReflectionClass( $obj );
 		$method = $class->getMethod( $name );
@@ -27,10 +84,7 @@ class User_Query_Cache_Tests extends WP_UnitTestCase {
 
 	/**
 	 * @covers site_cache_key
-	 */
-	/**
-	 * Paul
-	 * Regular expression would be better here instead of assertsEquals.
+	 * @ticket 40613
 	 */
 	public function test_site_cache_key() {
 		$this->assertEquals(
@@ -47,6 +101,7 @@ class User_Query_Cache_Tests extends WP_UnitTestCase {
 	 * For invalid user_id.
 	 *
 	 * @covers get_user_site_ids
+	 * @ticket 40613
 	 */
 	public function test_get_user_site_ids_non_numeric_user() {
 		// when the user_id is not a number.
@@ -60,6 +115,7 @@ class User_Query_Cache_Tests extends WP_UnitTestCase {
 	 * For non-logged-in user.
 	 *
 	 * @covers get_user_site_ids
+	 * @ticket 40613
 	 */
 	public function test_get_user_site_ids_no_login() {
 		$this->assertEquals(
@@ -72,6 +128,7 @@ class User_Query_Cache_Tests extends WP_UnitTestCase {
 	 * For single site.
 	 *
 	 * @covers get_user_site_ids
+	 * @ticket 40613
 	 * @group ms-excluded
 	 */
 	public function test_get_user_site_ids_single_site() {
@@ -88,6 +145,7 @@ class User_Query_Cache_Tests extends WP_UnitTestCase {
 	 * For multisite.
 	 *
 	 * @covers get_user_site_ids
+	 * @ticket 40613
 	 * @group ms-required
 	 */
 	public function test_get_user_site_ids_multisite() {
@@ -106,6 +164,7 @@ class User_Query_Cache_Tests extends WP_UnitTestCase {
 
 	/**
 	 * @covers update_last_change
+	 * @ticket 40613
 	 */
 	public function test_update_last_change() {
 		$this->assertTrue( self::call_method( $this->wp_user_query_cache, 'update_last_change', array( 'random_cache_key' ) ) );
@@ -113,6 +172,7 @@ class User_Query_Cache_Tests extends WP_UnitTestCase {
 
 	/**
 	 * @covers clear_user
+	 * @ticket 40613
 	 */
 	public function test_clear_user() {
 		$user_id = $this->factory->user->create();
@@ -124,6 +184,7 @@ class User_Query_Cache_Tests extends WP_UnitTestCase {
 
 	/**
 	 * @covers clear_site
+	 * @ticket 40613
 	 * @group ms-required
 	 */
 	public function test_clear_site_multisite() {
@@ -141,6 +202,7 @@ class User_Query_Cache_Tests extends WP_UnitTestCase {
 
 	/**
 	 * @covers clear_site
+	 * @ticket 40613
 	 * @group ms-excluded
 	 */
 	public function test_clear_site_single_site() {
@@ -161,6 +223,8 @@ class User_Query_Cache_Tests extends WP_UnitTestCase {
 	 * @covers after_password_reset
 	 * @covers retrieve_password_key
 	 * @covers updated_user_meta
+	 *
+	 * @ticket 40613
 	 *
 	 * @group ms-excluded
 	 */
@@ -252,6 +316,8 @@ class User_Query_Cache_Tests extends WP_UnitTestCase {
 	 * @covers add_user_to_blog
 	 * @covers remove_user_from_blog
 	 * @group ms-required
+	 *
+	 * @ticket 40613
 	 */
 	public function test_clear_user_hooks_multi_site() {
 		$user_id = $this->factory->user->create();
@@ -314,17 +380,46 @@ class User_Query_Cache_Tests extends WP_UnitTestCase {
 	}
 
 	/**
-	 * WIP
-	 *
 	 * @covers users_pre_query
+	 * @ticket 40613
 	 */
 	public function test_users_pre_query() {
-		$user_id = $this->factory->user->create();
-		wp_set_current_user( $user_id );
-		var_dump( $this->wp_user_query_cache->cache );
-		get_user_by( 'id', $user_id );
-		var_dump( $this->wp_user_query_cache->cache );
-		get_user_by( 'id', $user_id );
-		var_dump( $this->wp_user_query_cache->cache );
+
+		global $wpdb;
+
+		// user query args.
+		$args = array(
+			'fields' => 'ID',
+			'number' => 1,
+		);
+
+		$result = new WP_User_Query( $args );
+
+		$num_queries = $wpdb->num_queries;
+		$q_result    = $result->results;
+
+		// Re-execute the same query.
+		$result = new WP_User_Query( $args );
+
+		// Make sure no queries were executed.
+		$this->assertSame( $num_queries, $wpdb->num_queries );
+
+		// Make sure we get the same result for the same query.
+		$this->assertSame( $q_result, $result->results );
+	}
+
+	/**
+	 * @covers pre_count_users
+	 * @ticket 40613
+	 */
+	public function test_pre_count_users() {
+		global $wpdb;
+
+		count_users( 'time', self::SITE_ID );
+		$num_queries = $wpdb->num_queries;
+		count_users( 'time', self::SITE_ID );
+
+		// Make sure no queries were executed.
+		$this->assertSame( $num_queries, $wpdb->num_queries );
 	}
 }
