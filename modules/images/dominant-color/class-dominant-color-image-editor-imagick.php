@@ -77,6 +77,10 @@ class Dominant_Color_Image_Editor_Imagick extends WP_Image_Editor_Imagick {
 				}
 			}
 
+			if ( 'image/gif' === $this->image->getImageMimeType() ) {
+				return true;
+			}
+
 			// Walk through the pixels and look transparent pixels.
 			$w = $this->image->getImageWidth();
 			$h = $this->image->getImageHeight();

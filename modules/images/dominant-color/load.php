@@ -255,7 +255,7 @@ function dominant_color_set_image_editors() {
  * @access private
  *
  * @param int $attachment_id The attachment ID.
- * @return array|WP_Error Array with the dominant color and has transparency values or WP_Error on error.
+ * @return array|WP_Error Array with the Dominant color and has transparency values or WP_Error on error.
  */
 function _dominant_color_get_dominant_color_data( $attachment_id ) {
 	if ( ! wp_attachment_is_image( $attachment_id ) ) {
